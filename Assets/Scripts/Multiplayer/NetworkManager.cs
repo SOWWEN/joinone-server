@@ -8,6 +8,7 @@ public enum ServerToClientId : ushort
     loginResult,
     signUpResult,
     loginError,
+    sendChat,
 }
 
 public enum ClientToServerId : ushort
@@ -15,8 +16,7 @@ public enum ClientToServerId : ushort
     connect = 1,
     login,
     signUp,
-    addFavorite,
-    cancelFavorite,
+    sendChat,
 }
 
 public class NetworkManager : MonoBehaviour

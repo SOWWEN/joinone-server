@@ -26,13 +26,10 @@ public class Player : MonoBehaviour
     
     public static void Spawn(ushort id)
     {
-        foreach (Player otherPlayer in list.Values)
-            otherPlayer.SendSpawned(id);
-
         Player player = Instantiate(GameLogic.Singleton.PlayerPrefab, new Vector3(0f, 1f, 0f), Quaternion.identity).GetComponent<Player>();
         player.name = $"Player {id} ";
         player.Id = id;
-
+        player.SendSpawned(id);
         list.Add(id, player);
     }
 
@@ -46,6 +43,13 @@ public class Player : MonoBehaviour
     { 
         StartCoroutine(CheckLogin(id, email, password));
     }
+    public void sendChat(string chat )
+    {
+        Message message = Message.Create(MessageSendMode.reliable, ServerToClientId.sendChat);
+        message.AddString(chat);
+        NetworkManager.Singleton.Server.Send(message, Id);
+    } 
+
     #region Messages
     /*private void SendSpawned()
     {
@@ -102,9 +106,15 @@ public class Player : MonoBehaviour
     [MessageHandler((ushort)ClientToServerId.signUp)]
     private static void SignUp(ushort fromClientId, Message message)
     {
-        Debug.Log("1");
         if (list.TryGetValue(fromClientId, out Player player))
             player.SignUp(fromClientId, message.GetString(), message.GetString(), message.GetString(), message.GetString());
+    }
+
+    [MessageHandler((ushort)ClientToServerId.sendChat)]
+    private static void sendChat(ushort fromClientId, Message message)
+    {
+        if (list.TryGetValue(fromClientId, out Player player))
+            player.sendChat(message.GetString());
     }
 
     
@@ -131,32 +141,15 @@ public class Player : MonoBehaviour
 
     IEnumerator CheckLogin(ushort id, string _email, string _password)
     {
+        Debug.Log("18");
         WWWForm form = new WWWForm();
         form.AddField("email", _email);
         form.AddField("password", _password);
         WWW www = new WWW("http://localhost/Joinone/login.php", form);
         yield return www;
         if (www.text[0] == '0'){
-            //send player information
-            //www.text[i], i=0 login check, i=1 username, i=2 level, i=3 experience, i=4 bestscore
-            //param = (id, username, level)
-
-            //check player is online
-            bool hasPlayer = false;
-            foreach (Player _player in list.Values)
-            {
-                if(_player.Username == www.text.Split('\t')[1])
-                {
-                    LoginError(id, "9");
-                    hasPlayer = true;
-                    break;
-                }
-            }
-
-            //login success! update data
-            if(!hasPlayer){
-               StartCoroutine(WaitForDataUpdate(www));
-            }
+            StartCoroutine(WaitForDataUpdate(www));   
+            Debug.Log("19");  
         }else{
             LoginError(id, www.text);
             Debug.Log("User login failed. Error #" + www.text);
